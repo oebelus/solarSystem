@@ -1,0 +1,9 @@
+* {
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background-image: url("https://i.imgur.com/IEBsfcF.jpg");
+  background-size: cover;
+}
