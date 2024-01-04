@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GUI } from 'dat.gui'
 
 const width = window.innerWidth
 const height = window.innerHeight
@@ -13,9 +14,16 @@ renderer.setSize(width, height)
 renderer.shadowMap.enabled = true;
 
 const camera = new THREE.PerspectiveCamera(30, width/height, 0.5, 1000)
-camera.position.z = 150
+camera.position.z = 200
 camera.position.y = -100
-camera.position.x = -150
+camera.position.x = -120
+
+const gui = new GUI()
+var cam = gui.addFolder('Camera');
+cam.add(camera.position, 'y', 0, 100);
+cam.add(camera.position, 'x', -300, 200);
+cam.add(camera.position, 'z', -200, 200);
+cam.open();
 
 const scene = new THREE.Scene()
 
@@ -31,8 +39,6 @@ controls.minDistance = 50;
 controls.maxDistance = 500;
 
 controls.maxPolarAngle = Math.PI / 2;
-
-
 
 class Planet {
   geometry: any
@@ -225,6 +231,42 @@ function onWindowResize() {
 
 window.addEventListener( 'resize', onWindowResize );
 
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+var hovered: boolean = false
+
+function onPointerMove( event:MouseEvent ) {
+
+	// calculate pointer position in normalized device coordinates
+	// (-1 to +1) for both components
+
+	pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+}
+
+function hover() {
+
+	// update the picking ray with the camera and pointer position
+	raycaster.setFromCamera( pointer, camera );
+
+	// calculate objects intersecting the picking ray
+	const intersects = raycaster.intersectObjects( scene.children );
+  const colors: string[] = ["#AFC8AD", "#DC8686", "#B0A695", "B7B7B7", "DEBACE", "BCCEF8"]
+
+  for ( let i = 0; i < intersects.length; i ++ ) {
+    if (intersects[i].object instanceof THREE.Mesh) {
+      (intersects[i].object as any).material.color.set("#B0A695")
+      // (intersects[i].object as any).geometry.boundingSphere.radius == planet.radius
+    }
+	}
+
+	renderer.render( scene, camera );
+
+}
+
+window.addEventListener( 'click', onPointerMove );
+
 function animate() {
   requestAnimationFrame(animate)
   t += 0.01;
@@ -254,6 +296,7 @@ function animate() {
   neptuneOrbit.rotation.z -= data["neptune"][4] as number / 4000
   rotate(neptune)
 
+  hover()
   renderer.render(scene, camera)
 }
 
