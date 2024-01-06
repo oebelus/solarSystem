@@ -1,10 +1,13 @@
 {
+  "homepage": "https://github.com/xertendsz/solarSystem",
   "name": "solarsys",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
@@ -16,6 +19,7 @@
     "vite": "^5.0.8"
   },
   "dependencies": {
+    "gh-pages": "^6.1.1",
     "three": "^0.160.0"
   }
 }
