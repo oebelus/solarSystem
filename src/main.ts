@@ -45,11 +45,9 @@ class Planet {
   material: THREE.MeshStandardMaterial
   emissive: boolean | true
   element: any
-  radius: number
   position: {x: number, y: number, z: number}
 
-  constructor(radius: number, texturePath: string, x: number, y: number, z: number, emissive?: boolean) {
-    this.radius = radius
+  constructor(radius: number, texturePath: string, x: number, y: number, z: number, emissive?: boolean, opacity?: number) {
     this.position = {x: x, y: y, z: z}
     this.emissive = false
     this.geometry = new THREE.SphereGeometry(radius, 64, 32)
@@ -58,7 +56,7 @@ class Planet {
     const texture = textureLoader.load(texturePath); 
     
     
-    this.material = new THREE.MeshStandardMaterial({ map: texture });
+    this.material = new THREE.MeshStandardMaterial({ map: texture, transparent: true, opacity: opacity?opacity:1 });
     if (emissive) {
       this.material.emissive = new THREE.Color(0xffffff); 
       this.material.emissiveMap = texture;
@@ -85,19 +83,40 @@ let data: Record<string, (string|number)[]> = {
   "mercury": ["https://i.imgur.com/UQQRIZg.jpg", 3.7, 2439.7/2000, 0.39 * 32, 47.9],
   "venus": ["https://i.imgur.com/Wa8lpF6.jpg", 8.87, 6051.8/2000, 0.72 * 26, 35],
   "earth": ["https://i.imgur.com/Tajyxwl.jpg", 9.807, 6371/2000, 1 * 28, 29.8],
-  "moon": ["https://i.imgur.com/OjvY5Pv.jpg", 1.62],
+  "moon": ["https://i.imgur.com/OjvY5Pv.jpg", 1.62, 1737.4],
   "mars": ["https://i.imgur.com/U2QZveA.jpg", 3.71, 3389.5/2000, 1.524 * 25, 24],
   "jupiter": ["https://i.imgur.com/ZUVwSv5.jpg", 24.79, 69911/11000, 5.2 * 9.5, 13.1],
-  "saturn": ["https://i.imgur.com/ITtPqGy.jpg", 10.44, 58232/11000, 9.54 * 6.5, 9.69],
-  "uranus": ["https://i.imgur.com/wj611Q1.jpg", 8.87, 25362/11000, 19.22 * 4, 6.81],
-  "neptune": ["https://i.imgur.com/KU2X0rf.jpg", 11.15, 24622/11000, 30.06 * 3, 5.43]
+  "saturn": ["https://i.imgur.com/ITtPqGy.jpg", 10.44, 58232/11000, 9.54 * 7.5, 9.69],
+  "uranus": ["https://i.imgur.com/wj611Q1.jpg", 8.87, 25362/11000, 19.22 * 5, 6.81],
+  "neptune": ["https://i.imgur.com/KU2X0rf.jpg", 11.15, 24622/11000, 30.06 * 4, 5.43]
+}
+
+let radiusxplanet: Record<number, string> = {
+  8.704250382774285: "Sun",
+  1.2198500559833017: "Mercury",
+  3.0259001459638144: "Venus",
+  3.5259001478875116: "Venus",
+  3.185500130233892: "Earth",
+  3.6855001540113403: "Earth",
+  1.1582667182536956: "Moon",
+  1.6947500694595914: "Mars",
+  6.355545774894747: "Jupiter",
+  5.293818418589687: "Saturn",
+  2.3056364758058585: "Uranus",
+  2.2383637533349194: "Neptune",
+  11.000000358397052: "Saturn",
+  10.000000433298103: "Saturn",
+  6.293818370685831: "Saturn",
+  8.000000200741537: "Saturn",
+  9.000000457952705: "Saturn",
+  0.5000000163760792: "Deimos",
+  1.0000000327521583: "Phobos"
 }
 
 // Create an elliptical curve representing the orbit
-
-function orbit(xRadius: number, yRadius: number): THREE.Line<THREE.BufferGeometry<THREE.NormalBufferAttributes>, THREE.LineBasicMaterial> {
+function orbit(xRadius: number, yRadius: number, ax = 0, ay = 0, opacity?: number): THREE.Line<THREE.BufferGeometry<THREE.NormalBufferAttributes>, THREE.LineBasicMaterial> {
   let orbitPath = new THREE.EllipseCurve(
-    0, 0,           // ax, aY
+    ax, ay,           // ax, aY
     xRadius, yRadius,       // xRadius, yRadius
     0, 2 * Math.PI,  // aStartAngle, aEndAngle
     false,            // aClockwise
@@ -108,7 +127,7 @@ function orbit(xRadius: number, yRadius: number): THREE.Line<THREE.BufferGeometr
   let points = orbitPath.getPoints(200);
   let geometry = new THREE.BufferGeometry().setFromPoints(points);
   
-  let material = new THREE.LineBasicMaterial({ color : "grey" });
+  let material = new THREE.LineBasicMaterial({ color : "grey", transparent: true, opacity: opacity != undefined?opacity:0.5 });
   
   let ellipse = new THREE.Line(geometry, material);
 
@@ -126,6 +145,15 @@ function rotate(planet: Planet) {
   planet.element.rotation.y += 0.01
 }
 
+function saturnRing(plusInner: number, outer: number, color: string) {
+  const geometry = new THREE.RingGeometry(data["saturn"][2] as number + plusInner, outer, 100);
+  const material = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(geometry, material)
+  ring.position.x = data["saturn"][3] as number
+  ring.position.y = 2
+  saturnOrbit.add(ring)
+}
+
 let sun = new Planet(data["sun"][2] as number, data["sun"][0] as string, 0, 0, 0, true);
 
 // Mercury
@@ -133,20 +161,47 @@ let mercury = new Planet(data["mercury"][2] as number, data["mercury"][0] as str
 let mercuryOrbit = orbit(data["mercury"][3] as number, data["mercury"][3] as number)
 drawPlanet(mercury, mercuryOrbit)
 
-// Venus
+// Venus & its atmosphere
 let venus = new Planet(data["venus"][2] as number, data["venus"][0] as string, data["venus"][3] as number, 0, 0)
+let venusAtmosphere = new Planet(data["venus"][2] as number + 0.5, "https://i.imgur.com/UEoSeyB.jpg", data["venus"][3] as number, 0, 0, false, 0.7)
 let venusOrbit = orbit(data["venus"][3] as number, data["venus"][3] as number)
+
+venusAtmosphere.draw()
+venusOrbit.add(venusAtmosphere.element)
 drawPlanet(venus, venusOrbit)
 
-// Earth
+// Earth, its moon & clouds
 let earth = new Planet(data["earth"][2] as number, data["earth"][0] as string, data["earth"][3] as number, 0, 0)
 let earthOrbit = orbit(data["earth"][3] as number, data["earth"][3] as number)
-drawPlanet(earth, earthOrbit)
-/*let moon = new Planet(earthRadius - 5, data["moon"][0] as string)*/
+let moon = new Planet(data["moon"][2] as number as number/1500, data["moon"][0] as string, 7, 0, 0)
+let moonOrbit = orbit(7, 7, 0, 0, 0)
+let earthClouds = new Planet(data["earth"][2] as number + 0.5, "https://i.imgur.com/ZUDQ4Fd.jpg", data["earth"][3] as number, 0, 0, false, 0.8)
 
+moon.draw()
+earthClouds.draw()
+moonOrbit.add(moon.element)
+earth.element.add(moonOrbit)
+earthOrbit.add(earthClouds.element)
+drawPlanet(earth, earthOrbit)
+
+// Mars
 let mars = new Planet(data["mars"][2] as number, data["mars"][0] as string, data["mars"][3] as number, 0, 0)
 let marsOrbit = orbit(data["mars"][3] as number, data["mars"][3] as number)
 drawPlanet(mars, marsOrbit)
+
+function phobdeim(color: string, radius: number, position:number, y?:number): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap> {
+  const geometry = new THREE.SphereGeometry(radius, 60, 60); 
+  const material = new THREE.MeshBasicMaterial({ color: color }); 
+  const sphere = new THREE.Mesh( geometry, material ); 
+  sphere.position.x = data["mars"][3] as number + position
+  sphere.position.y = y?y:2
+  return sphere
+}
+
+let deimos = phobdeim("#9B5D42", 0.5, 2)
+let phobos = phobdeim("#C28C87", 1, 2, 10)
+marsOrbit.add(deimos)
+marsOrbit.add(phobos)
 
 // Jupiter
 let jupiter = new Planet(data["jupiter"][2] as number, data["jupiter"][0] as string, data["jupiter"][3] as number, 2, 0)
@@ -157,6 +212,13 @@ drawPlanet(jupiter, jupiterOrbit)
 let saturn = new Planet(data["saturn"][2] as number, data["saturn"][0] as string, data["saturn"][3] as number, 2, 0)
 let saturnOrbit = orbit(data["saturn"][3] as number, data["saturn"][3] as number)
 drawPlanet(saturn, saturnOrbit)
+
+// Ring
+saturnRing(1, 6, "#655f45")
+saturnRing(1.2, 8, "#d8ae6d")
+saturnRing(2, 9, "#ffe1ab")
+saturnRing(3, 10, "#dbb57c")
+saturnRing(4, 11, "#b89c72")
 
 // Uranus
 let uranus = new Planet(data["uranus"][2] as number, data["uranus"][0] as string, data["uranus"][3] as number, 3, 0)
@@ -185,9 +247,7 @@ function onWindowResize() {
   renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
-window.addEventListener( 'resize', onWindowResize );
-
-/*const raycaster = new THREE.Raycaster();
+const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 const originalCameraPosition = new THREE.Vector3();
@@ -200,8 +260,36 @@ function onPointerMove( event:MouseEvent ) {
 	pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 	pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 }
+var info = document.querySelector('.information');
 
-window.addEventListener('click', onPointerMove);*/
+function hover() {
+
+	// update the picking ray with the camera and pointer position
+	raycaster.setFromCamera( pointer, camera );
+
+	// calculate objects intersecting the picking ray
+	const intersects = raycaster.intersectObjects( scene.children );
+
+	for ( let i = 0; i < intersects.length; i ++ ) {
+    if (intersects[i].object instanceof THREE.Mesh) {
+      //console.log((intersects[i].object as THREE.Mesh).geometry.boundingSphere.radius)
+      if (intersects[i].object instanceof THREE.Mesh) {
+        let mesh = intersects[i].object as THREE.Mesh
+        if (info) {
+          if (mesh.geometry.boundingSphere) {
+            info.innerHTML = `${radiusxplanet[mesh.geometry.boundingSphere.radius]}`
+          }
+          //radiusxplanet[mesh.geometry.boundingSphere.radius]
+        }
+      }
+    }
+	}
+	renderer.render(scene, camera);
+}
+
+window.addEventListener('pointermove', onPointerMove);
+
+window.addEventListener('resize', onWindowResize);
 
 function animate() {
   requestAnimationFrame(animate)
@@ -217,6 +305,9 @@ function animate() {
   earthOrbit.rotation.z -= data["earth"][4] as number / 4000
   rotate(earth)
 
+  moonOrbit.rotation.y -= 0.002
+  moonOrbit.rotation.z -= 0.002
+
   marsOrbit.rotation.z -= data["mars"][4] as number / 4000
   rotate(mars)
 
@@ -231,7 +322,7 @@ function animate() {
 
   neptuneOrbit.rotation.z -= data["neptune"][4] as number / 4000
   rotate(neptune)
-
+  hover()
   renderer.render(scene, camera)
 }
 
