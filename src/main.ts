@@ -110,7 +110,7 @@ let radiusxplanet: Record<number, string> = {
   8.000000200741537: "Saturn",
   9.000000457952705: "Saturn",
   0.5000000163760792: "Deimos",
-  1.0000000327521583: "Phobos"
+  0.8000000368848014: "Phobos"
 }
 
 // Create an elliptical curve representing the orbit
@@ -154,6 +154,15 @@ function saturnRing(plusInner: number, outer: number, color: string) {
   saturnOrbit.add(ring)
 }
 
+function phobdeim(color: string, radius: number, position:number): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap> {
+  const geometry = new THREE.SphereGeometry(radius, 60, 60); 
+  const material = new THREE.MeshBasicMaterial({ color: color }); 
+  const sphere = new THREE.Mesh( geometry, material ); 
+  sphere.position.x = position
+  sphere.position.y = 2
+  return sphere
+}
+
 let sun = new Planet(data["sun"][2] as number, data["sun"][0] as string, 0, 0, 0, true);
 
 // Mercury
@@ -187,21 +196,21 @@ drawPlanet(earth, earthOrbit)
 // Mars
 let mars = new Planet(data["mars"][2] as number, data["mars"][0] as string, data["mars"][3] as number, 0, 0)
 let marsOrbit = orbit(data["mars"][3] as number, data["mars"][3] as number)
+let deimos = phobdeim("#786D5D", 0.5, 4)
+let deimosOrbit = orbit(4, 4, 0, 0, 0)
+let phobos = phobdeim("#836953", 0.8, -data["mars"][2] as number - 1)
+let phobosOrbit = orbit(1, 1, 0, 0, 0)
+
+deimosOrbit.add(deimos)
+phobosOrbit.add(phobos)
+mars.element.add(phobosOrbit)
+mars.element.add(deimosOrbit)
 drawPlanet(mars, marsOrbit)
 
-function phobdeim(color: string, radius: number, position:number): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap> {
-  const geometry = new THREE.SphereGeometry(radius, 60, 60); 
-  const material = new THREE.MeshBasicMaterial({ color: color }); 
-  const sphere = new THREE.Mesh( geometry, material ); 
-  sphere.position.x = data["mars"][3] as number + position
-  sphere.position.y = 2
-  return sphere
-}
-
-let deimos = phobdeim("#9B5D42", 0.5, 2)
-let phobos = phobdeim("#C28C87", 1, -data["mars"][2] as number)
+/*scene.add(deimosOrbit)
+scene.add(phobosOrbit)
 marsOrbit.add(deimos)
-marsOrbit.add(phobos)
+marsOrbit.add(phobos)*/
 
 // Jupiter
 let jupiter = new Planet(data["jupiter"][2] as number, data["jupiter"][0] as string, data["jupiter"][3] as number, 2, 0)
@@ -272,14 +281,12 @@ function hover() {
 
 	for ( let i = 0; i < intersects.length; i ++ ) {
     if (intersects[i].object instanceof THREE.Mesh) {
-      //console.log((intersects[i].object as THREE.Mesh).geometry.boundingSphere.radius)
       if (intersects[i].object instanceof THREE.Mesh) {
         let mesh = intersects[i].object as THREE.Mesh
         if (info) {
           if (mesh.geometry.boundingSphere) {
             info.innerHTML = `${radiusxplanet[mesh.geometry.boundingSphere.radius]}`
           }
-          //radiusxplanet[mesh.geometry.boundingSphere.radius]
         }
       }
     }
