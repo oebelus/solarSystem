@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GUI } from 'dat.gui'
 
 const width = window.innerWidth
 const height = window.innerHeight
@@ -17,13 +16,6 @@ const camera = new THREE.PerspectiveCamera(30, width/height, 0.5, 1000)
 camera.position.z = 200
 camera.position.y = -100
 camera.position.x = -120
-
-const gui = new GUI()
-var cam = gui.addFolder('Camera');
-cam.add(camera.position, 'y', 0, 100);
-cam.add(camera.position, 'x', -300, 200);
-cam.add(camera.position, 'z', -200, 200);
-cam.open();
 
 const scene = new THREE.Scene()
 
