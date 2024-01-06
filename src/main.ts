@@ -189,17 +189,17 @@ let mars = new Planet(data["mars"][2] as number, data["mars"][0] as string, data
 let marsOrbit = orbit(data["mars"][3] as number, data["mars"][3] as number)
 drawPlanet(mars, marsOrbit)
 
-function phobdeim(color: string, radius: number, position:number, y?:number): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap> {
+function phobdeim(color: string, radius: number, position:number): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap> {
   const geometry = new THREE.SphereGeometry(radius, 60, 60); 
   const material = new THREE.MeshBasicMaterial({ color: color }); 
   const sphere = new THREE.Mesh( geometry, material ); 
   sphere.position.x = data["mars"][3] as number + position
-  sphere.position.y = y?y:2
+  sphere.position.y = 2
   return sphere
 }
 
 let deimos = phobdeim("#9B5D42", 0.5, 2)
-let phobos = phobdeim("#C28C87", 1, 2, 10)
+let phobos = phobdeim("#C28C87", 1, -data["mars"][2] as number)
 marsOrbit.add(deimos)
 marsOrbit.add(phobos)
 
